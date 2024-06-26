@@ -2,7 +2,12 @@
 
 # Import modules
 import subprocess as sp
-import sys, re, copy, os, codecs, gzip
+import sys
+import re
+import copy
+import os
+import codecs
+import gzip
 from argparse import ArgumentParser, Action as ArgParseAction
 from collections import OrderedDict
 import pysam
@@ -12,133 +17,122 @@ __version__ = "1.1.5"
 
 
 def get_version():
-        """Return version information."""
-        prog = 'ggsashimi'
-        version = '{} v{}'.format(prog, __version__)
-        return version
+    """Return version information."""
+    prog = 'ggsashimi'
+    version = '{} v{}'.format(prog, __version__)
+    return version
 
 
 def define_options():
+    class DebugInfoAction(ArgParseAction):
+        def __init__(self, option_strings, dest, **kwargs):
+            super(DebugInfoAction, self).__init__(option_strings, dest, nargs=0, **kwargs)
 
-        class DebugInfoAction(ArgParseAction):
-
-                def __init__(self, option_strings, dest, **kwargs):
-                        super(DebugInfoAction, self).__init__(option_strings, dest, nargs=0, **kwargs)
-
-                def __call__(self, parser, namespace, values, option_string=None):
-                        returncode = 0
-                        try:
-                                get_debug_info()
-                        except sp.CalledProcessError as CPE:
-                                print("ERROR: {}".format(CPE.output.strip().decode('utf-8')))
-                                returncode = CPE.returncode
-                        except Exception as e:
-                                print("ERROR: {}".format(e))
-                                returncode = 1
-                        finally:
-                                parser.exit(returncode)
-
+        def __call__(self, parser, namespace, values, option_string=None):
+            returncode = 0
+            try:
+                get_debug_info()
+            except sp.CalledProcessError as CPE:
+                print("ERROR: {}".format(CPE.output.strip().decode('utf-8')))
+                returncode = CPE.returncode
+            except Exception as e:
+                print("ERROR: {}".format(e))
+                returncode = 1
+            finally:
+                parser.exit(returncode)
 
         # Argument parsing
-        parser = ArgumentParser(description='Create sashimi plot for a given genomic region')
-        # parser.register('action', 'debuginfo', DebugInfoAction)
-        parser.add_argument("-b", "--bam", type=str, required=True,
-                help="""
-                Individual bam file or file with a list of bam files.
-                In the case of a list of files the format is tsv:
-                1col: id for bam file,
-                2col: path of bam file,
-                3+col: additional columns
-                """)
-        parser.add_argument("-c", "--coordinates", type=str, required=True,
-                help="Genomic region. Format: chr:start-end. Remember that bam coordinates are 0-based")
-        parser.add_argument("-o", "--out-prefix", type=str, dest="out_prefix", default="sashimi",
-                help="Prefix for plot file name [default=%(default)s]")
-        parser.add_argument("-S", "--out-strand", type=str, dest="out_strand", default="both",
-                help="Only for --strand other than 'NONE'. Choose which signal strand to plot: <both> <plus> <minus> [default=%(default)s]")
-        parser.add_argument("-M", "--min-coverage", type=int, default=1, dest="min_coverage",
-                help="Minimum number of reads supporting a junction to be drawn [default=1]")
-        parser.add_argument("-j", "--junctions-bed", type=str, dest = "junctions_bed", default="",
-                help="Junction BED file name [default=no junction file]")
-        parser.add_argument("-g", "--gtf",
-                help="Gtf file with annotation (only exons is enough)")
-        parser.add_argument("-s", "--strand", default="NONE", type=str,
-                help="Strand specificity: <NONE> <SENSE> <ANTISENSE> <MATE1_SENSE> <MATE2_SENSE> [default=%(default)s]")
-        parser.add_argument("--shrink", action="store_true",
-                help="Shrink the junctions by a factor for nicer display [default=%(default)s]")
-        parser.add_argument("-O", "--overlay", type=int,
-                help="Index of column with overlay levels (1-based)")
-        parser.add_argument("-A", "--aggr", type=str, default="",
-                help="""Aggregate function for overlay: <mean> <median> <mean_j> <median_j>.
+    parser = ArgumentParser(description='Create sashimi plot for a given genomic region')
+    # parser.register('action', 'debuginfo', DebugInfoAction)
+    parser.add_argument("-b", "--bam", type=str, required=True,
+                        help="""
+            Individual bam file or file with a list of bam files.
+            In the case of a list of files the format is tsv:
+            1col: id for bam file,
+            2col: path of bam file,
+            3+col: additional columns
+            """)
+    parser.add_argument("-c", "--coordinates", type=str, required=True,
+                        help="Genomic region. Format: chr:start-end. Remember that bam coordinates are 0-based")
+    parser.add_argument("-o", "--out-prefix", type=str, dest="out_prefix", default="sashimi",
+                        help="Prefix for plot file name [default=%(default)s]")
+    parser.add_argument("-S", "--out-strand", type=str, dest="out_strand", default="both",
+                        help="Only for --strand other than 'NONE'. Choose which signal strand to plot: <both> <plus> <minus> [default=%(default)s]")
+    parser.add_argument("-M", "--min-coverage", type=int, default=1, dest="min_coverage",
+                        help="Minimum number of reads supporting a junction to be drawn [default=1]")
+    parser.add_argument("-j", "--junctions-bed", type=str, dest="junctions_bed", default="",
+                        help="Junction BED file name [default=no junction file]")
+    parser.add_argument("-g", "--gtf",
+                        help="Gtf file with annotation (only exons is enough)")
+    parser.add_argument("-s", "--strand", default="NONE", type=str,
+                        help="Strand specificity: <NONE> <SENSE> <ANTISENSE> <MATE1_SENSE> <MATE2_SENSE> [default=%(default)s]")
+    parser.add_argument("--shrink", action="store_true",
+                        help="Shrink the junctions by a factor for nicer display [default=%(default)s]")
+    parser.add_argument("-O", "--overlay", type=int,
+                        help="Index of column with overlay levels (1-based)")
+    parser.add_argument("-A", "--aggr", type=str, default="",
+                        help="""Aggregate function for overlay: <mean> <median> <mean_j> <median_j>.
                         Use mean_j | median_j to keep density overlay but aggregate junction counts [default=no aggregation]""")
-        parser.add_argument("-C", "--color-factor", type=int, dest="color_factor",
-                help="Index of column with color levels (1-based)")
-        parser.add_argument("--alpha", type=float, default=0.5,
-                help="Transparency level for density histogram [default=%(default)s]")
-        parser.add_argument("-P", "--palette", type=str,
-                help="Color palette file. tsv file with >=1 columns, where the color is the first column. Both R color names and hexadecimal values are valid")
-        parser.add_argument("-L", "--labels", type=int, dest="labels", default=1,
-                help="Index of column with labels (1-based) [default=%(default)s]")
-        parser.add_argument("--fix-y-scale", default=False, action="store_true", dest = "fix_y_scale",
-                help="Fix y-scale across individual signal plots [default=%(default)s]")
-        parser.add_argument("--height", type=float, default=2,
-                help="Height of the individual signal plot in inches [default=%(default)s]")
-        parser.add_argument("--ann-height", type=float, default=1.5, dest="ann_height",
-                help="Height of annotation plot in inches [default=%(default)s]")
-        parser.add_argument("--width", type=float, default=10,
-                help="Width of the plot in inches [default=%(default)s]")
-        parser.add_argument("--base-size", type=float, default=14, dest="base_size",
-                help="Base font size of the plot in pch [default=%(default)s]")
-        parser.add_argument("-F", "--out-format", type=str, default="pdf", dest="out_format",
-                help="Output file format: <pdf> <svg> <png> <jpeg> <tiff> [default=%(default)s]")
-        parser.add_argument("-R", "--out-resolution", type=int, default=300, dest="out_resolution",
-                help="Output file resolution in PPI (pixels per inch). Applies only to raster output formats [default=%(default)s]")
-        parser.add_argument("--debug-info", action=DebugInfoAction,
-                help="Show several system information useful for debugging purposes [default=%(default)s]")
-        parser.add_argument('--version', action='version', version=get_version())
+    parser.add_argument("-C", "--color-factor", type=int, dest="color_factor",
+                        help="Index of column with color levels (1-based)")
+    parser.add_argument("--alpha", type=float, default=0.5,
+                        help="Transparency level for density histogram [default=%(default)s]")
+    parser.add_argument("-P", "--palette", type=str,
+                        help="Color palette file. tsv file with >=1 columns, where the color is the first column. Both R color names and hexadecimal values are valid")
+    parser.add_argument("-L", "--labels", type=int, dest="labels", default=1,
+                        help="Index of column with labels (1-based) [default=%(default)s]")
+    parser.add_argument("--fix-y-scale", default=False, action="store_true", dest="fix_y_scale",
+                        help="Fix y-scale across individual signal plots [default=%(default)s]")
+    parser.add_argument("--height", type=float, default=2,
+                        help="Height of the individual signal plot in inches [default=%(default)s]")
+    parser.add_argument("--ann-height", type=float, default=1.5, dest="ann_height",
+                        help="Height of annotation plot in inches [default=%(default)s]")
+    parser.add_argument("--width", type=float, default=10,
+                        help="Width of the plot in inches [default=%(default)s]")
+    parser.add_argument("--base-size", type=float, default=14, dest="base_size",
+                        help="Base font size of the plot in pch [default=%(default)s]")
+    parser.add_argument("-F", "--out-format", type=str, default="pdf", dest="out_format",
+                        help="Output file format: <pdf> <svg> <png> <jpeg> <tiff> [default=%(default)s]")
+    parser.add_argument("-R", "--out-resolution", type=int, default=300, dest="out_resolution",
+                        help="Output file resolution in PPI (pixels per inch). Applies only to raster output formats [default=%(default)s]")
+    parser.add_argument("--debug-info", action=DebugInfoAction,
+                        help="Show several system information useful for debugging purposes [default=%(default)s]")
+    parser.add_argument('--version', action='version', version=get_version())
 #       parser.add_argument("-s", "--smooth", action="store_true", default=False, help="Smooth the signal histogram")
-        return parser
-
+    return parser
 
 
 def parse_coordinates(c):
-        c = c.replace(",", "")
-        chr = c.split(":")[0]
-        start, end = c.split(":")[1].split("-")
-        # Convert to 0-based
-        start, end = int(start) - 1, int(end)
-        return chr, start, end
-
+    c = c.replace(",", "")
+    chr = c.split(":")[0]
+    start, end = c.split(":")[1].split("-")
+    # Convert to 0-based
+    start, end = int(start) - 1, int(end)
+    return chr, start, end
 
 
 def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions):
-
-        # Match
-        if CIGAR_op == "M":
-                for i in range(pos, pos + CIGAR_len):
-                        if i < start or i >= end:
-                                continue
-                        ind = i - start
-                        a[ind] += 1
-
-        # Insertion or Soft-clip
-        if CIGAR_op == "I" or CIGAR_op == "S":
-                return pos
-
-        # Deletion
-        if CIGAR_op == "D":
-                pass
-
-        # Junction
-        if CIGAR_op == "N":
-                don = pos
-                acc = pos + CIGAR_len
-                if don > start and acc < end:
-                        junctions[(don,acc)] = junctions.setdefault((don,acc), 0) + 1
-
-        pos = pos + CIGAR_len
-
-        return pos
+    # Match
+    if CIGAR_op == "M":
+            for i in range(pos, pos + CIGAR_len):
+                    if i < start or i >= end:
+                            continue
+                    ind = i - start
+                    a[ind] += 1
+    # Insertion or Soft-clip
+    if CIGAR_op == "I" or CIGAR_op == "S":
+            return pos
+    # Deletion
+    if CIGAR_op == "D":
+            pass
+    # Junction
+    if CIGAR_op == "N":
+            don = pos
+            acc = pos + CIGAR_len
+            if don > start and acc < end:
+                junctions[(don,acc)] = junctions.setdefault((don,acc), 0) + 1
+    pos = pos + CIGAR_len
+    return pos
 
 
 def flip_read(s, samflag):
