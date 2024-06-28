@@ -119,12 +119,15 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions):
                 continue
             ind = i - start
             a[ind] += 1
+
     # Insertion or Soft-clip
     if CIGAR_op == "I" or CIGAR_op == "S":
         return pos
+
     # Deletion
     if CIGAR_op == "D":
         pass
+
     # Junction
     if CIGAR_op == "N":
         don = pos
@@ -448,11 +451,11 @@ def gtf_for_ggplot(annotation, start, end, arrow_bins):
 
         gtfp = ggplot()
         if (length(ann_list[['introns']]) > 0) {
-            gtfp = gtfp + geom_segment(data=ann_list[['introns']], aes(x=start, xend=end, y=tx, yend=tx), size=0.3)
+            gtfp = gtfp + geom_segment(data=ann_list[['introns']], aes(x=start, xend=end, y=tx, yend=tx), linewidth=0.3)
             gtfp = gtfp + geom_segment(data=txarrows, aes(x=V1,xend=V2,y=tx,yend=tx), arrow=arrow(length=unit(0.02,"npc")))
         }
         if (length(ann_list[['exons']]) > 0) {
-            gtfp = gtfp + geom_segment(data=ann_list[['exons']], aes(x=start, xend=end, y=tx, yend=tx), size=5, alpha=1)
+            gtfp = gtfp + geom_segment(data=ann_list[['exons']], aes(x=start, xend=end, y=tx, yend=tx), linewidth=5, alpha=1)
         }
         gtfp = gtfp + scale_y_discrete(expand=c(0,0.5))
         gtfp = gtfp + scale_x_continuous(expand=c(0,0.25))
@@ -486,7 +489,7 @@ def setup_R_script(h, w, b, label_dict):
             plot.margin = unit(c(15,15,15,15), "pt"),
             panel.grid = element_blank(),
             panel.border = element_blank(),
-            axis.line = element_line(size=0.5),
+            axis.line = element_line(linewidth=0.5),
             axis.title.x = element_blank(),
             axis.title.y = element_text(angle=0, vjust=0.5)
         )
@@ -534,39 +537,39 @@ def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns):
                 x, y = shrink_density(x, y, intersected_introns)
                 shrinked_introns_k, dons, accs = shrink_junctions(dons, accs, intersected_introns)
                 shrinked_introns.update(shrinked_introns_k)
-            else:
-                for id in overlay_dict[k]:
-                    xid, yid, donsid, accsid, ydid, yaid, countsid = d[id]
-                    if intersected_introns:
-                        xid, yid = shrink_density(xid, yid, intersected_introns)
-                        shrinked_intronsid, donsid, accsid = shrink_junctions(donsid, accsid, intersected_introns)
-                        shrinked_introns.update(shrinked_intronsid)
-                    x += xid
-                    y += yid
-                    dons += donsid
-                    accs += accsid
-                    yd += ydid
-                    ya += yaid
-                    counts += countsid
-                if aggr and "_j" not in aggr:
-                    x = d[overlay_dict[k][0]][0]
-                    y = list(map(aggr_f[aggr], zip(*(d[id][1] for id in overlay_dict[k]))))
-                    if intersected_introns:
-                        x, y = shrink_density(x, y, intersected_introns)
-                # dons, accs, yd, ya, counts = [], [], [], [], []
-            s += """
-                 density_list[["%(id)s"]] = data.frame(x=c(%(x)s), y=c(%(y)s))
-                 junction_list[["%(id)s"]] = data.frame(x=c(%(dons)s), xend=c(%(accs)s), y=c(%(yd)s), yend=c(%(ya)s), count=c(%(counts)s))
-                 """ % ({
-                        'id': k,
-                        'x': ",".join(map(str, x)),
-                        'y': ",".join(map(str, y)),
-                        'dons': ",".join(map(str, dons)),
-                        'accs': ",".join(map(str, accs)),
-                        'yd': ",".join(map(str, yd)),
-                        'ya': ",".join(map(str, ya)),
-                        'counts': ",".join(map(str, counts))
-                        })
+        else:
+            for id in overlay_dict[k]:
+                xid, yid, donsid, accsid, ydid, yaid, countsid = d[id]
+                if intersected_introns:
+                    xid, yid = shrink_density(xid, yid, intersected_introns)
+                    shrinked_intronsid, donsid, accsid = shrink_junctions(donsid, accsid, intersected_introns)
+                    shrinked_introns.update(shrinked_intronsid)
+                x += xid
+                y += yid
+                dons += donsid
+                accs += accsid
+                yd += ydid
+                ya += yaid
+                counts += countsid
+            if aggr and "_j" not in aggr:
+                x = d[overlay_dict[k][0]][0]
+                y = list(map(aggr_f[aggr], zip(*(d[id][1] for id in overlay_dict[k]))))
+                if intersected_introns:
+                    x, y = shrink_density(x, y, intersected_introns)
+            # dons, accs, yd, ya, counts = [], [], [], [], []
+        s += """
+            density_list[["%(id)s"]] = data.frame(x=c(%(x)s), y=c(%(y)s))
+            junction_list[["%(id)s"]] = data.frame(x=c(%(dons)s), xend=c(%(accs)s), y=c(%(yd)s), yend=c(%(ya)s), count=c(%(counts)s))
+            """ % ({
+                    'id': k,
+                    'x': ",".join(map(str, x)),
+                    'y': ",".join(map(str, y)),
+                    'dons': ",".join(map(str, dons)),
+                    'accs': ",".join(map(str, accs)),
+                    'yd': ",".join(map(str, yd)),
+                    'ya': ",".join(map(str, ya)),
+                    'counts': ",".join(map(str, counts))
+                    })
     if intersected_introns:
         s += """
         coord_dict = data.frame(shrinked=c(%(shrinked_introns_keys)s), real=c(%(shrinked_introns_values)s))
@@ -762,284 +765,284 @@ if __name__ == "__main__":
                 x, _ = shrink_density(x, x, intersected_introns)
             R_script += gtf_for_ggplot(annotation, x[0], x[-1], arrow_bins)
 
-            R_script += make_R_lists(id_list, bam_dict[strand], overlay_dict, args.aggr, intersected_introns)
+        R_script += make_R_lists(id_list, bam_dict[strand], overlay_dict, args.aggr, intersected_introns)
 
-            R_script += """
+        R_script += """
 
-                        pdf(NULL) # just to remove the blank pdf produced by ggplotGrob
+                    pdf(NULL) # just to remove the blank pdf produced by ggplotGrob
 
-                        if(packageVersion('ggplot2') >= '3.0.0'){  # fix problems with ggplot2 vs >3.0.0
-                            vs = 1
-                        } else {
-                            vs = 0
-                        }
+                    if(packageVersion('ggplot2') >= '3.0.0'){  # fix problems with ggplot2 vs >3.0.0
+                        vs = 1
+                    } else {
+                        vs = 0
+                    }
 
-                        if(%(fix_y_scale)s) {
+                    if(%(fix_y_scale)s) {
 
-                            maxheight = max(unlist(lapply(density_list, function(df){max(df$y)})))
-                            breaks_y = labeling::extended(0, maxheight, m = 4)
-                            maxheight_j = 0
-                            for (bam_index in 1:length(density_list)) { # Emulate code below to obtain max top arch height
-
-                                id = names(density_list)[bam_index]
-                                d = data.table(density_list[[id]])
-                                junctions = data.table(junction_list[[id]])
-
-                                row_i = c()
-                                if (nrow(junctions) >0 ) {
-                                    junctions$jlabel = as.character(junctions$count)
-                                    junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),paste(jlabel,collapse=",")), keyby=.(x,xend)], names(junctions))
-                                    if ("%(args.aggr)s" != "") {
-                                        junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),round(%(args.aggr)s(count))), keyby=.(x,xend)], names(junctions))
-                                    }
-                                    row_i = 1:nrow(junctions)
-                                }
-                                for (i in row_i) {
-                                    j = as.numeric(junctions[i,1:5])
-                                    if ("%(args.aggr)s" != "") {
-                                        j[3] = ifelse(length(d[x==j[1]-1,y])==0, 0, max(as.numeric(d[x==j[1]-1,y])))
-                                        j[4] = ifelse(length(d[x==j[2]+1,y])==0, 0, max(as.numeric(d[x==j[2]+1,y])))
-                                    }
-                                    if (i%%%%2 != 0) { #top
-                                        set.seed(mean(j[3:4]))
-                                        maxheight_j = max(maxheight_j, max(j[3:4]) * runif(1, 1.2, 1.5))
-                                    }
-                                }
-                            }
-                        }
-
-                        if(exists('coord_dict')){
-                            all_pos_shrinked = do.call(rbind, density_list)$x
-                            s2r = merge(intersected_introns, coord_dict, by.x = 'real_xend', by.y = 'real')
-                            s2r = merge(s2r, coord_dict, by.x = 'real_x', by.y = 'real', suffixes = c('_xend', '_x'))
-                            breaks_x_shrinked = labeling::extended(min(all_pos_shrinked), max(all_pos_shrinked), m = 5)
-                            breaks_x = c()
-                            out_range = c()
-                            for (b in breaks_x_shrinked){
-                                iintron = FALSE
-                                for (j in 1:nrow(s2r)){
-                                    l = s2r[j, ]
-                                    if(b >= l$shrinked_x && b <= l$shrinked_xend){
-                                        # Intersected intron
-                                        p = (b-l$shrinked_x)/(l$shrinked_xend - l$shrinked_x)
-                                        realb = round(l$real_x + p*(l$real_xend - l$real_x))
-                                        breaks_x = c(breaks_x, realb)
-                                        iintron = TRUE
-                                        break
-                                    }
-                                }
-                                if (!iintron){
-                                    # Exon, upstream/downstream intergenic region or intron (not intersected)
-                                    if(b <= min(s2r$shrinked_x)) {
-                                        l <- s2r[which.min(s2r$shrinked_x), ]
-                                        if(any(b == all_pos_shrinked)){
-                                            # Boundary (subtract)
-                                            s = l$shrinked_x - b
-                                            realb = l$real_x - s
-                                            breaks_x = c(breaks_x, realb)
-                                        } else {
-                                            out_range <- c(out_range, which(breaks_x_shrinked == b))
-                                        }
-                                    } else if (b >= max(s2r$shrinked_xend)){
-                                        l <- s2r[which.max(s2r$shrinked_xend), ]
-                                        if(any(b == all_pos_shrinked)){
-                                            # Boundary (sum)
-                                            s = b - l$shrinked_xend
-                                            realb = l$real_xend + s
-                                            breaks_x = c(breaks_x, realb)
-                                        } else {
-                                            out_range <- c(out_range, which(breaks_x_shrinked == b))
-                                        }
-                                    } else {
-                                        delta = b-s2r$shrinked_xend
-                                        delta[delta < 0] = Inf
-                                        l = s2r[which.min(delta), ]
-                                        # Internal (sum)
-                                        s = b - l$shrinked_xend
-                                        realb = l$real_xend + s
-                                        breaks_x = c(breaks_x, realb)
-                                    }
-                                }
-                            }
-                            if(length(out_range)) {
-                                breaks_x_shrinked = breaks_x_shrinked[-out_range]
-                            }
-                        }
-
-                        density_grobs = list();
-
-                        for (bam_index in 1:length(density_list)) {
+                        maxheight = max(unlist(lapply(density_list, function(df){max(df$y)})))
+                        breaks_y = labeling::extended(0, maxheight, m = 4)
+                        maxheight_j = 0
+                        for (bam_index in 1:length(density_list)) { # Emulate code below to obtain max top arch height
 
                             id = names(density_list)[bam_index]
                             d = data.table(density_list[[id]])
                             junctions = data.table(junction_list[[id]])
 
-                            # Density plot
-                            gp = ggplot(d) + geom_bar(aes(x, y), width=1, position='identity', stat='identity', fill=color_list[[id]], alpha=%(alpha)s)
-                            gp = gp + labs(y=labels[[id]])
-                            if(exists('coord_dict')) {
-                                gp = gp + scale_x_continuous(expand=c(0, 0.25), breaks = breaks_x_shrinked, labels = breaks_x)
-                            } else {
-                                gp = gp + scale_x_continuous(expand=c(0, 0.25))
-                            }
-
-                            if(!%(fix_y_scale)s){
-                                maxheight = max(d[['y']])
-                                breaks_y = labeling::extended(0, maxheight, m = 4)
-                                gp = gp + scale_y_continuous(breaks = breaks_y)
-                            } else {
-                                gp = gp + scale_y_continuous(breaks = breaks_y, limits = c(NA, max(maxheight, maxheight_j)))
-                            }
-
-                            # Aggregate junction counts
                             row_i = c()
                             if (nrow(junctions) >0 ) {
-
                                 junctions$jlabel = as.character(junctions$count)
                                 junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),paste(jlabel,collapse=",")), keyby=.(x,xend)], names(junctions))
                                 if ("%(args.aggr)s" != "") {
                                     junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),round(%(args.aggr)s(count))), keyby=.(x,xend)], names(junctions))
                                 }
-                                # The number of rows (unique junctions per bam) has to be calculated after aggregation
                                 row_i = 1:nrow(junctions)
                             }
-
-
                             for (i in row_i) {
-
-                                j_tot_counts = sum(junctions[['count']])
-
                                 j = as.numeric(junctions[i,1:5])
-
                                 if ("%(args.aggr)s" != "") {
                                     j[3] = ifelse(length(d[x==j[1]-1,y])==0, 0, max(as.numeric(d[x==j[1]-1,y])))
                                     j[4] = ifelse(length(d[x==j[2]+1,y])==0, 0, max(as.numeric(d[x==j[2]+1,y])))
                                 }
-
-                                # Find intron midpoint
-                                xmid = round(mean(j[1:2]), 1)
-                                set.seed(mean(j[3:4]))
-                                ymid = max(j[3:4]) * runif(1, 1.2, 1.5)
-
-                                # Thickness of the arch
-                                lwd = scale_lwd(j[5]/j_tot_counts)
-
-                                curve_par = gpar(lwd=lwd, col=color_list[[id]])
-
-                                # Arc grobs
-
-                                # Choose position of the arch (top or bottom)
-                                nss = i
-                                if (nss%%%%2 == 0) {  #bottom
-                                    ymid = -runif(1, 0.2, 0.4) * maxheight
-                                    # Draw the arcs
-                                    # Left
-                                    curve = xsplineGrob(x=c(0, 0, 1, 1), y=c(1, 0, 0, 0), shape=1, gp=curve_par)
-                                    gp = gp + annotation_custom(grob = curve, j[1], xmid, 0, ymid)
-                                    # Right
-                                    curve = xsplineGrob(x=c(1, 1, 0, 0), y=c(1, 0, 0, 0), shape=1, gp=curve_par)
-                                    gp = gp + annotation_custom(grob = curve, xmid, j[2], 0, ymid)
+                                if (i%%%%2 != 0) { #top
+                                    set.seed(mean(j[3:4]))
+                                    maxheight_j = max(maxheight_j, max(j[3:4]) * runif(1, 1.2, 1.5))
                                 }
+                            }
+                        }
+                    }
 
-                                if (nss%%%%2 != 0) {  #top
-                                    # Draw the arcs
-                                    # Left
-                                    curve = xsplineGrob(x=c(0, 0, 1, 1), y=c(0, 1, 1, 1), shape=1, gp=curve_par)
-                                    gp = gp + annotation_custom(grob = curve, j[1], xmid, j[3], ymid)
-                                    # Right
-                                    curve = xsplineGrob(x=c(1, 1, 0, 0), y=c(0, 1, 1, 1), shape=1, gp=curve_par)
-                                    gp = gp + annotation_custom(grob = curve, xmid, j[2], j[4], ymid)
+                    if(exists('coord_dict')){
+                        all_pos_shrinked = do.call(rbind, density_list)$x
+                        s2r = merge(intersected_introns, coord_dict, by.x = 'real_xend', by.y = 'real')
+                        s2r = merge(s2r, coord_dict, by.x = 'real_x', by.y = 'real', suffixes = c('_xend', '_x'))
+                        breaks_x_shrinked = labeling::extended(min(all_pos_shrinked), max(all_pos_shrinked), m = 5)
+                        breaks_x = c()
+                        out_range = c()
+                        for (b in breaks_x_shrinked){
+                            iintron = FALSE
+                            for (j in 1:nrow(s2r)){
+                                l = s2r[j, ]
+                                if(b >= l$shrinked_x && b <= l$shrinked_xend){
+                                    # Intersected intron
+                                    p = (b-l$shrinked_x)/(l$shrinked_xend - l$shrinked_x)
+                                    realb = round(l$real_x + p*(l$real_xend - l$real_x))
+                                    breaks_x = c(breaks_x, realb)
+                                    iintron = TRUE
+                                    break
                                 }
-
-                                # Add junction labels
-                                gp = gp + annotate("label", x = xmid, y = ymid, label = as.character(junctions[i,6]),
-                                    vjust=0.5, hjust=0.5, label.padding=unit(0.01, "lines"),
-                                    label.size=NA, size=(base_size*0.352777778)*0.6
-                                )
-
-
-                                # gp = gp + annotation_custom(grob = rectGrob(x=0, y=0, gp=gpar(col="red"), just=c("left","bottom")), xmid, j[2], j[4], ymid)
-                                # gp = gp + annotation_custom(grob = rectGrob(x=0, y=0, gp=gpar(col="green"), just=c("left","bottom")), j[1], xmid, j[3], ymid)
-
-
                             }
-
-                            gpGrob = ggplotGrob(gp);
-                            gpGrob$layout$clip[gpGrob$layout$name=="panel"] <- "off"
-                            if (bam_index == 1) {
-                                maxWidth = gpGrob$widths[2+vs] + gpGrob$widths[3+vs];    # fix problems ggplot2 vs
-                                maxYtextWidth = gpGrob$widths[3+vs];                     # fix problems ggplot2 vs
-                                # Extract x axis grob (trim=F --> keep empty cells)
-                                xaxisGrob <- gtable_filter(gpGrob, "axis-b", trim=F)
-                                xaxisGrob$heights[8+vs] = gpGrob$heights[1]              # fix problems ggplot2 vs
-                                x.axis.height = gpGrob$heights[7+vs] + gpGrob$heights[1] # fix problems ggplot2 vs
+                            if (!iintron){
+                                # Exon, upstream/downstream intergenic region or intron (not intersected)
+                                if(b <= min(s2r$shrinked_x)) {
+                                    l <- s2r[which.min(s2r$shrinked_x), ]
+                                    if(any(b == all_pos_shrinked)){
+                                        # Boundary (subtract)
+                                        s = l$shrinked_x - b
+                                        realb = l$real_x - s
+                                        breaks_x = c(breaks_x, realb)
+                                    } else {
+                                        out_range <- c(out_range, which(breaks_x_shrinked == b))
+                                    }
+                                } else if (b >= max(s2r$shrinked_xend)){
+                                    l <- s2r[which.max(s2r$shrinked_xend), ]
+                                    if(any(b == all_pos_shrinked)){
+                                        # Boundary (sum)
+                                        s = b - l$shrinked_xend
+                                        realb = l$real_xend + s
+                                        breaks_x = c(breaks_x, realb)
+                                    } else {
+                                        out_range <- c(out_range, which(breaks_x_shrinked == b))
+                                    }
+                                } else {
+                                    delta = b-s2r$shrinked_xend
+                                    delta[delta < 0] = Inf
+                                    l = s2r[which.min(delta), ]
+                                    # Internal (sum)
+                                    s = b - l$shrinked_xend
+                                    realb = l$real_xend + s
+                                    breaks_x = c(breaks_x, realb)
+                                }
                             }
-
-
-                            # Remove x axis from all density plots
-                            kept_names = gpGrob$layout$name[gpGrob$layout$name != "axis-b"]
-                            gpGrob <- gtable_filter(gpGrob, paste(kept_names, sep="", collapse="|"), trim=F)
-
-                            # Find max width of y text and y label and max width of y text
-                            maxWidth = grid::unit.pmax(maxWidth, gpGrob$widths[2+vs] + gpGrob$widths[3+vs]); # fix problems ggplot2 vs
-                            maxYtextWidth = grid::unit.pmax(maxYtextWidth, gpGrob$widths[3+vs]); # fix problems ggplot2 vs
-                            density_grobs[[id]] = gpGrob;
                         }
-
-                        # Add x axis grob after density grobs BEFORE annotation grob
-                        density_grobs[["xaxis"]] = xaxisGrob
-
-                        # Annotation grob
-                        if (%(args.gtf)s == 1) {
-                            gtfGrob = ggplotGrob(gtfp);
-                            maxWidth = grid::unit.pmax(maxWidth, gtfGrob$widths[2+vs] + gtfGrob$widths[3+vs]); # fix problems ggplot2 vs
-                            density_grobs[['gtf']] = gtfGrob;
+                        if(length(out_range)) {
+                            breaks_x_shrinked = breaks_x_shrinked[-out_range]
                         }
+                    }
 
-                        # Reassign grob widths to align the plots
-                        for (id in names(density_grobs)) {
-                            density_grobs[[id]]$widths[1] <- density_grobs[[id]]$widths[1] + maxWidth - (density_grobs[[id]]$widths[2+vs] + maxYtextWidth); # fix problems ggplot2 vs
-                            density_grobs[[id]]$widths[3+vs] <- maxYtextWidth # fix problems ggplot2 vs
-                        }
+                    density_grobs = list();
 
-                        # Heights for density, x axis and annotation
-                        heights = unit.c(
-                            unit(rep(%(signal_height)s, length(density_list)), "in"),
-                            x.axis.height,
-                            unit(%(ann_height)s*%(args.gtf)s, "in")
-                        )
+                    for (bam_index in 1:length(density_list)) {
 
-                        # Arrange grobs
-                        argrobs = arrangeGrob(
-                            grobs=density_grobs,
-                            ncol=1,
-                            heights = heights,
-                        );
+                        id = names(density_list)[bam_index]
+                        d = data.table(density_list[[id]])
+                        junctions = data.table(junction_list[[id]])
 
-                        # Save plot to file in the requested format
-                        if ("%(out_format)s" == "tiff"){
-                            # TIFF images will be lzw-compressed
-                            ggsave("%(out)s", plot = argrobs, device = "tiff", width = width, height = height, units = "in", dpi = %(out_resolution)s, compression = "lzw", limitsize = FALSE)
+                        # Density plot
+                        gp = ggplot(d) + geom_bar(aes(x, y), width=1, position='identity', stat='identity', fill=color_list[[id]], alpha=%(alpha)s)
+                        gp = gp + labs(y=labels[[id]])
+                        if(exists('coord_dict')) {
+                            gp = gp + scale_x_continuous(expand=c(0, 0.25), breaks = breaks_x_shrinked, labels = breaks_x)
                         } else {
-                            ggsave("%(out)s", plot = argrobs, device = "%(out_format)s", width = width, height = height, units = "in", dpi = %(out_resolution)s, limitsize = FALSE)
+                            gp = gp + scale_x_continuous(expand=c(0, 0.25))
                         }
 
-                        dev.log = dev.off()
+                        if(!%(fix_y_scale)s){
+                            maxheight = max(d[['y']])
+                            breaks_y = labeling::extended(0, maxheight, m = 4)
+                            gp = gp + scale_y_continuous(breaks = breaks_y)
+                        } else {
+                            gp = gp + scale_y_continuous(breaks = breaks_y, limits = c(NA, max(maxheight, maxheight_j)))
+                        }
 
-                        """ % ({
-                        "out": "%s.%s" % (out_prefix, out_suffix),
-                        "out_format": args.out_format,
-                        "out_resolution": args.out_resolution,
-                        "args.gtf": float(bool(args.gtf)),
-                        "args.aggr": args.aggr.rstrip("_j"),
-                        "signal_height": args.height,
-                        "ann_height": args.ann_height,
-                        "alpha": args.alpha,
-                        "fix_y_scale": ("TRUE" if args.fix_y_scale else "FALSE")
-                        })
-            if os.getenv('GGSASHIMI_DEBUG') is not None:
-                with open("R_script", 'w') as r:
-                    r.write(R_script)
-            else:
-                plot(R_script)
+                        # Aggregate junction counts
+                        row_i = c()
+                        if (nrow(junctions) >0 ) {
+
+                            junctions$jlabel = as.character(junctions$count)
+                            junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),paste(jlabel,collapse=",")), keyby=.(x,xend)], names(junctions))
+                            if ("%(args.aggr)s" != "") {
+                                junctions = setNames(junctions[,.(max(y), max(yend),round(%(args.aggr)s(count)),round(%(args.aggr)s(count))), keyby=.(x,xend)], names(junctions))
+                            }
+                            # The number of rows (unique junctions per bam) has to be calculated after aggregation
+                            row_i = 1:nrow(junctions)
+                        }
+
+
+                        for (i in row_i) {
+
+                            j_tot_counts = sum(junctions[['count']])
+
+                            j = as.numeric(junctions[i,1:5])
+
+                            if ("%(args.aggr)s" != "") {
+                                j[3] = ifelse(length(d[x==j[1]-1,y])==0, 0, max(as.numeric(d[x==j[1]-1,y])))
+                                j[4] = ifelse(length(d[x==j[2]+1,y])==0, 0, max(as.numeric(d[x==j[2]+1,y])))
+                            }
+
+                            # Find intron midpoint
+                            xmid = round(mean(j[1:2]), 1)
+                            set.seed(mean(j[3:4]))
+                            ymid = max(j[3:4]) * runif(1, 1.2, 1.5)
+
+                            # Thickness of the arch
+                            lwd = scale_lwd(j[5]/j_tot_counts)
+
+                            curve_par = gpar(lwd=lwd, col=color_list[[id]])
+
+                            # Arc grobs
+
+                            # Choose position of the arch (top or bottom)
+                            nss = i
+                            if (nss%%%%2 == 0) {  #bottom
+                                ymid = -runif(1, 0.2, 0.4) * maxheight
+                                # Draw the arcs
+                                # Left
+                                curve = xsplineGrob(x=c(0, 0, 1, 1), y=c(1, 0, 0, 0), shape=1, gp=curve_par)
+                                gp = gp + annotation_custom(grob = curve, j[1], xmid, 0, ymid)
+                                # Right
+                                curve = xsplineGrob(x=c(1, 1, 0, 0), y=c(1, 0, 0, 0), shape=1, gp=curve_par)
+                                gp = gp + annotation_custom(grob = curve, xmid, j[2], 0, ymid)
+                            }
+
+                            if (nss%%%%2 != 0) {  #top
+                                # Draw the arcs
+                                # Left
+                                curve = xsplineGrob(x=c(0, 0, 1, 1), y=c(0, 1, 1, 1), shape=1, gp=curve_par)
+                                gp = gp + annotation_custom(grob = curve, j[1], xmid, j[3], ymid)
+                                # Right
+                                curve = xsplineGrob(x=c(1, 1, 0, 0), y=c(0, 1, 1, 1), shape=1, gp=curve_par)
+                                gp = gp + annotation_custom(grob = curve, xmid, j[2], j[4], ymid)
+                            }
+
+                            # Add junction labels
+                            gp = gp + annotate("label", x = xmid, y = ymid, label = as.character(junctions[i,6]),
+                                vjust=0.5, hjust=0.5, label.padding=unit(0.01, "lines"),
+                                label.size=NA, size=(base_size*0.352777778)*0.6
+                            )
+
+
+                            # gp = gp + annotation_custom(grob = rectGrob(x=0, y=0, gp=gpar(col="red"), just=c("left","bottom")), xmid, j[2], j[4], ymid)
+                            # gp = gp + annotation_custom(grob = rectGrob(x=0, y=0, gp=gpar(col="green"), just=c("left","bottom")), j[1], xmid, j[3], ymid)
+
+
+                        }
+
+                        gpGrob = ggplotGrob(gp);
+                        gpGrob$layout$clip[gpGrob$layout$name=="panel"] <- "off"
+                        if (bam_index == 1) {
+                            maxWidth = gpGrob$widths[2+vs] + gpGrob$widths[3+vs];    # fix problems ggplot2 vs
+                            maxYtextWidth = gpGrob$widths[3+vs];                     # fix problems ggplot2 vs
+                            # Extract x axis grob (trim=F --> keep empty cells)
+                            xaxisGrob <- gtable_filter(gpGrob, "axis-b", trim=F)
+                            xaxisGrob$heights[8+vs] = gpGrob$heights[1]              # fix problems ggplot2 vs
+                            x.axis.height = gpGrob$heights[7+vs] + gpGrob$heights[1] # fix problems ggplot2 vs
+                        }
+
+
+                        # Remove x axis from all density plots
+                        kept_names = gpGrob$layout$name[gpGrob$layout$name != "axis-b"]
+                        gpGrob <- gtable_filter(gpGrob, paste(kept_names, sep="", collapse="|"), trim=F)
+
+                        # Find max width of y text and y label and max width of y text
+                        maxWidth = grid::unit.pmax(maxWidth, gpGrob$widths[2+vs] + gpGrob$widths[3+vs]); # fix problems ggplot2 vs
+                        maxYtextWidth = grid::unit.pmax(maxYtextWidth, gpGrob$widths[3+vs]); # fix problems ggplot2 vs
+                        density_grobs[[id]] = gpGrob;
+                    }
+
+                    # Add x axis grob after density grobs BEFORE annotation grob
+                    density_grobs[["xaxis"]] = xaxisGrob
+
+                    # Annotation grob
+                    if (%(args.gtf)s == 1) {
+                        gtfGrob = ggplotGrob(gtfp);
+                        maxWidth = grid::unit.pmax(maxWidth, gtfGrob$widths[2+vs] + gtfGrob$widths[3+vs]); # fix problems ggplot2 vs
+                        density_grobs[['gtf']] = gtfGrob;
+                    }
+
+                    # Reassign grob widths to align the plots
+                    for (id in names(density_grobs)) {
+                        density_grobs[[id]]$widths[1] <- density_grobs[[id]]$widths[1] + maxWidth - (density_grobs[[id]]$widths[2+vs] + maxYtextWidth); # fix problems ggplot2 vs
+                        density_grobs[[id]]$widths[3+vs] <- maxYtextWidth # fix problems ggplot2 vs
+                    }
+
+                    # Heights for density, x axis and annotation
+                    heights = unit.c(
+                        unit(rep(%(signal_height)s, length(density_list)), "in"),
+                        x.axis.height,
+                        unit(%(ann_height)s*%(args.gtf)s, "in")
+                    )
+
+                    # Arrange grobs
+                    argrobs = arrangeGrob(
+                        grobs=density_grobs,
+                        ncol=1,
+                        heights = heights,
+                    );
+
+                    # Save plot to file in the requested format
+                    if ("%(out_format)s" == "tiff"){
+                        # TIFF images will be lzw-compressed
+                        ggsave("%(out)s", plot = argrobs, device = "tiff", width = width, height = height, units = "in", dpi = %(out_resolution)s, compression = "lzw", limitsize = FALSE)
+                    } else {
+                        ggsave("%(out)s", plot = argrobs, device = "%(out_format)s", width = width, height = height, units = "in", dpi = %(out_resolution)s, limitsize = FALSE)
+                    }
+
+                    dev.log = dev.off()
+
+                    """ % ({
+                    "out": "%s.%s" % (out_prefix, out_suffix),
+                    "out_format": args.out_format,
+                    "out_resolution": args.out_resolution,
+                    "args.gtf": float(bool(args.gtf)),
+                    "args.aggr": args.aggr.rstrip("_j"),
+                    "signal_height": args.height,
+                    "ann_height": args.ann_height,
+                    "alpha": args.alpha,
+                    "fix_y_scale": ("TRUE" if args.fix_y_scale else "FALSE")
+                    })
+        if os.getenv('GGSASHIMI_DEBUG') is not None:
+            with open("R_script", 'w') as r:
+                r.write(R_script)
+        else:
+            plot(R_script)
         exit()
