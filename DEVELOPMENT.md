@@ -3,9 +3,10 @@
 ## Make a release
 
 Check the current development release:
-```
+
+```console
 git checkout dev
-$ ./ggsashimi.py --version
+./ggsashimi.py --version
 ggsashimi v0.7.0-dev
 ```
 
@@ -13,14 +14,14 @@ ggsashimi v0.7.0-dev
 
 Create a 0.7.0 release from the development version above:
 
-```
+```console
 git checkout dev
 git checkout -b release/0.7.0
 ```
 
 Use [`bump2version`](https://github.com/c4urself/bump2version) to make the release:
 
-```
+```console
 bump2version release
 ```
 
@@ -30,17 +31,16 @@ This command strips the `-dev` suffix from the release and create a `v0.7.0` tag
 
 Create a 1.0.0 release from the development version above:
 
-```
+```console
 git checkout dev
 git checkout -b release/1.0.0
 ```
 
 Use [`bump2version`](https://github.com/c4urself/bump2version) to update the version and create the tag:
 
-```
+```console
 bum2version --no-tag major
 bump2version release
 ```
 
 The first command bumps the version to `1.0.0-dev` and skips the creation of a tag. The second command strips the `-dev` suffix and create the tag.
-
