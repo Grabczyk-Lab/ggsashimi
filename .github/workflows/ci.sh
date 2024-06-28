@@ -55,6 +55,7 @@ for mode in ${modes[@]}; do
         ;;
     esac
     ./ggsashimi.py $anno -b $bams -c $region $color $aggr
+    ls
     md5=$(sed '/^\/\(.\+Date\|Producer\)/d' sashimi.pdf | md5sum | awk '$0=$1')
     [[ " ${sashimi_md5[@]} " =~ " ${md5} " ]] || fail "== Wrong checksum for $mode mode: $md5"
 done
