@@ -1,6 +1,6 @@
 # ggsashimi
 
-[![Build Status](https://github.com/guigolab/ggsashimi/workflows/CI/badge.svg)](https://github.com/guigolab/ggsashimi/actions)
+[![Build Status](https://github.com/Grabczyk-Lab/ggsashimi/workflows/CI/badge.svg)](https://github.com/Grabczyk-Lab/ggsashimi/actions)
 
 Command-line tool for the visualization of splicing events across multiple samples
 
