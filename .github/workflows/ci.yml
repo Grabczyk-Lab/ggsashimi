@@ -15,11 +15,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [2.7, 3.8]
+        python_version: [3.12]
         config:
-          - { r: 'release', ggplot: '3.3.3' }
-          - { r: 'oldrel', ggplot: '3.3.3' }
-          - { r: '3.5.3', ggplot: '2.2.1' }
+          - { r: 'release', ggplot: '3.5.1' }
     steps:
     - uses: actions/checkout@v2
     - name: Setup R
