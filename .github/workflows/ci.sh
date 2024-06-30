@@ -24,7 +24,7 @@ for mode in ${modes[@]}; do
     case $mode in
     sashimi_anno)
         sashimi_md5=(
-            "a377e9fd6478784944e1ebbed544a6e7"
+            "7330fa39e0bfa409e77171df5fdd60f8"
         )
         anno="-g examples/annotation.gtf"
         ;;
