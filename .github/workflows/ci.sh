@@ -42,7 +42,7 @@ for mode in ${modes[@]}; do
         ;;
     *)
         sashimi_md5=(
-            "50301d53d80f317f5a043e6b6f0ba833"
+            "3de410b1b017f5aac6f501a2c3eeac5d"
         )
         ;;
     esac
