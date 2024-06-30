@@ -18,14 +18,14 @@ def test_count_operator():
     j = OrderedDict()
 
     # soft clip
-    new_pos = sp.count_operator('S', 1, pos, start, end, c, j)
+    new_pos = sp.count_operator('S', 1, pos, start, end, c, j,'SC')
     assert new_pos == pos
     assert all(v == 0 for v in c)
     assert len(j) == 0
     pos = new_pos
 
     # match
-    new_pos = sp.count_operator('M', 42, pos, start, end, c, j)
+    new_pos = sp.count_operator('M', 42, pos, start, end, c, j, 'M')
     assert new_pos == pos+42
     p = [v == 1 for v in c[pos-start:pos-start+42]]
     assert len(p) == 42
@@ -34,7 +34,7 @@ def test_count_operator():
     pos = new_pos
 
     # skip
-    new_pos = sp.count_operator('N', 2852, pos, start, end, c, j)
+    new_pos = sp.count_operator('N', 2852, pos, start, end, c, j,'S')
     assert new_pos == pos+2852
     p = [v == 0 for v in c[pos-start:pos-start+2852]]
     assert len(p) == 2852
@@ -44,7 +44,7 @@ def test_count_operator():
     pos = new_pos
 
     # match
-    new_pos = sp.count_operator('M', 58, pos, start, end, c, j)
+    new_pos = sp.count_operator('M', 58, pos, start, end, c, j,'M2')
     assert new_pos == pos+58
     p = [v == 1 for v in c[pos-start:pos-start+58]]
     assert len(p) == 58
