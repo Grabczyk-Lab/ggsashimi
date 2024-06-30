@@ -173,13 +173,15 @@ def read_bam(f, c, s):
         if read.is_unmapped:
             continue
 
-        samflag, read_start, CIGAR = read.flag, read.reference_start+1, read.cigarstring
+        samflag, read_start, CIGAR = read.flag, read.reference_start+1, str(read.cigarstring)
 
         # Ignore reads with more exotic CIGAR operators
         if any(map(lambda x: x in CIGAR, ["H", "P", "X", "="])):
             continue
-
-        read_strand = ["+", "-"][flip_read(s, samflag) ^ bool(int(samflag) & 16)]
+        flip_result = flip_read(s, samflag)
+        if flip_result is None:
+            flip_result = 0
+        read_strand = ["+", "-"][flip_result ^ bool(int(samflag) & 16)]
         if s == "NONE":
             read_strand = "+"
 
@@ -317,6 +319,7 @@ def read_gtf(f, c):
     end = end - 1
     with gzip.open(f, 'rt') if f.endswith(".gz") else open(f) as openf:
         for line in openf:
+            line = str(line)
             if line.startswith("#"):
                 continue
             el_chr, _, el, el_start, el_end, _, strand, _, tags = line.strip().split("\t")
@@ -586,7 +589,8 @@ def make_R_lists(id_list, d, overlay_dict, aggr, intersected_introns):
 def plot(R_script):
     p = sp.Popen("R --vanilla --slave", shell=True, stdin=sp.PIPE)
     p.communicate(input=R_script.encode('utf-8'))
-    p.stdin.close()
+    if p.stdin is not None:
+        p.stdin.close()
     p.wait()
     return
 
@@ -673,7 +677,7 @@ if __name__ == "__main__":
         if not os.path.isfile(bam):
             continue
         a, junctions = read_bam(bam, args.coordinates, args.strand)
-        if a.keys() == ["+"] and all(map(lambda x: x == 0, list(a.values()[0]))):
+        if a.keys() == ["+"] and all(map(lambda x: x == 0, list(a.values()[0]))): # type: ignore
             print("WARN: Sample {} has no reads in the specified area.".format(id))
             continue
         id_list.append(id)
