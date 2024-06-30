@@ -112,7 +112,7 @@ def parse_coordinates(c):
     return chr, start, end
 
 
-def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions):
+def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id):
     # Match
     if CIGAR_op == "M":
         for i in range(pos, pos + CIGAR_len):
@@ -136,9 +136,9 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions):
         if don > start and acc < end:
             junctions[(don, acc)] = junctions.setdefault((don, acc), 0) + 1
     if str(junctions) not in junctions_dicts and str(junctions) != "OrderedDict()":
-        junctions_dicts[str(junctions)] = 1
+        junctions_dicts[read_id + " " + str(junctions)] = 1
     elif str(junctions) != "OrderedDict()":
-        junctions_dicts[str(junctions)] += 1
+        junctions_dicts[read_id + " " + str(junctions)] += 1
     pos = pos + CIGAR_len
     return pos
 
@@ -195,9 +195,10 @@ def read_bam(f, c, s):
 
         pos = read_start
 
+        read_id = read.query_name
         for n, CIGAR_op in enumerate(CIGAR_ops):
             CIGAR_len = int(CIGAR_lens[n])
-            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand])
+            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id)
 
     samfile.close()
     return a, junctions
@@ -1054,4 +1055,6 @@ if __name__ == "__main__":
                 r.write(R_script)
         else:
             plot(R_script)
+        for dict in junctions_dicts:
+            print(dict + ":\n" + str(junctions_dicts[dict]) + "\n")
         exit()
