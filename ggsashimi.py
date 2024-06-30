@@ -15,6 +15,7 @@ import pysam
 
 __version__ = "1.1.5"
 
+junctions_dicts = {}
 
 def get_version():
     """Return version information."""
@@ -134,6 +135,10 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions):
         acc = pos + CIGAR_len
         if don > start and acc < end:
             junctions[(don, acc)] = junctions.setdefault((don, acc), 0) + 1
+    if str(junctions) not in junctions_dicts and str(junctions) != "OrderedDict()":
+        junctions_dicts[str(junctions)] = 1
+    elif str(junctions) != "OrderedDict()":
+        junctions_dicts[str(junctions)] += 1
     pos = pos + CIGAR_len
     return pos
 

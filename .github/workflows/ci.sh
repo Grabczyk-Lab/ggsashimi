@@ -24,25 +24,25 @@ for mode in ${modes[@]}; do
     case $mode in
     sashimi_anno)
         sashimi_md5=(
-            "7330fa39e0bfa409e77171df5fdd60f8" # R 4.0.3 - ggplot2 3.3.3
+            "a377e9fd6478784944e1ebbed544a6e7"
         )
         anno="-g examples/annotation.gtf"
         ;;
     sashimi_color)
         sashimi_md5=(
-            "cf9e26c16384deea74f22a91df20d5c2" # R 4.0.3 - ggplot2 3.3.3
+            "77c2fce34b2ee347e26ac3414d5a4c87"
         )
         color="-C 3"
         ;;
     sashimi_aggr)
         sashimi_md5=(
-            "57169c63e61488849291b246f23a8aa7" # R 4.0.3 - ggplot2 3.3.3
+            "e71bdf32d5380688abdc27f772c2fb20"
         )
         aggr="-C 3 -O 3 -A mean_j"
         ;;
     *)
         sashimi_md5=(
-            "3de410b1b017f5aac6f501a2c3eeac5d"
+            "50301d53d80f317f5a043e6b6f0ba833"
         )
         ;;
     esac
