@@ -30,7 +30,7 @@ for mode in ${modes[@]}; do
         ;;
     sashimi_color)
         sashimi_md5=(
-            "77c2fce34b2ee347e26ac3414d5a4c87"
+            "cf9e26c16384deea74f22a91df20d5c2"
         )
         color="-C 3"
         ;;
