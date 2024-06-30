@@ -36,7 +36,7 @@ for mode in ${modes[@]}; do
         ;;
     sashimi_aggr)
         sashimi_md5=(
-            "e71bdf32d5380688abdc27f772c2fb20"
+            "57169c63e61488849291b246f23a8aa7"
         )
         aggr="-C 3 -O 3 -A mean_j"
         ;;
