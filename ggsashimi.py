@@ -196,7 +196,7 @@ def read_bam(f, c, s):
         CIGAR_ops = re.split("[0-9]+", CIGAR)[1:]
 
         pos = read_start
-        if str(read.query_name) contains "|":
+        if "|" in str(read.query_name):
             read_id = str(read.query_name).split('|')[1]
         else:
             read_id = str(read.query_name)
