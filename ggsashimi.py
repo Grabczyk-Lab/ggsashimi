@@ -1059,9 +1059,10 @@ if __name__ == "__main__":
         else:
             plot(R_script)
         new_annotation = []
-        for exon in annotation["exons"]['"NM_001040108.2"']:
-            new_exon = (int(exon[0]) + 1, int(exon[1]) + 1)
-            new_annotation.append(new_exon)
+        if '"NM_001040108.2"' in annotation["exons"]:
+            for exon in annotation["exons"]['"NM_001040108.2"']:
+                new_exon = (int(exon[0]) + 1, int(exon[1]) + 1)
+                new_annotation.append(new_exon)
         annotation_lookup = {}
         exon_count = len(new_annotation)
         for exon in new_annotation:
