@@ -1080,7 +1080,8 @@ if __name__ == "__main__":
                     if location in annotation_lookup and annotation_lookup[location] not in e_list:
                         e_list.append(annotation_lookup[location])
             e_list.reverse()
-            print(read, e_list)
+            if e_list != []:
+                print(read, e_list)
             if str(e_list) in e_list_dict:
                 e_list_dict[str(e_list)] += 1
             else:
