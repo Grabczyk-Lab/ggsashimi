@@ -23,8 +23,8 @@ jobs:
     - name: Get R and OS version
       id: get-version
       run: |
-        cat(sessionInfo()$running)
-        cat(R.Version()$version.string)
+        cat("os-version=",sessionInfo()$running)
+        cat("r-version=",R.Version()$version.string)
       shell: Rscript {0} >> $GITHUB_STATE
     - name: Cache R packages
       id: cache-r-packages
