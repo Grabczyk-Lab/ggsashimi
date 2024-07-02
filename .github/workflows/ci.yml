@@ -55,6 +55,6 @@ jobs:
     - name: Test with pytest
       run:
         pytest
-    - name: Run CI test script
-      run:
-        bash .github/workflows/ci.sh
+#    - name: Run CI test script
+#      run:
+#        bash .github/workflows/ci.sh

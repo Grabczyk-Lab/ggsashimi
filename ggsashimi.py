@@ -135,10 +135,10 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id):
         acc = pos + CIGAR_len
         if don > start and acc < end:
             junctions[(don, acc)] = junctions.setdefault((don, acc), 0) + 1
-    if str(junctions) not in junctions_dicts and str(junctions) != "OrderedDict()":
-        junctions_dicts[read_id + " " + str(junctions)] = 1
-    elif str(junctions) != "OrderedDict()":
-        junctions_dicts[read_id + " " + str(junctions)] += 1
+    if read_id not in junctions_dicts and str(junctions) != "OrderedDict()":
+        junctions_dicts[read_id] = str(junctions)
+    elif str(junctions) != "OrderedDict()" and len(junctions_dicts[read_id]) < len(str(junctions)):
+        junctions_dicts[read_id] = str(junctions)
     pos = pos + CIGAR_len
     return pos
 
@@ -195,11 +195,11 @@ def read_bam(f, c, s):
 
         pos = read_start
 
-        read_id = read.query_name
+        read_id = str(read.query_name).split('|')[1]
         for n, CIGAR_op in enumerate(CIGAR_ops):
             CIGAR_len = int(CIGAR_lens[n])
             pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id)
-
+        junctions = {"+": OrderedDict()}
     samfile.close()
     return a, junctions
 
@@ -1055,6 +1055,31 @@ if __name__ == "__main__":
                 r.write(R_script)
         else:
             plot(R_script)
-        for dict in junctions_dicts:
-            print(dict + ":\n" + str(junctions_dicts[dict]) + "\n")
+        new_annotation = []
+        for exon in annotation["exons"]['"NM_001040108.2"']:
+            new_exon = (int(exon[0]) + 1, int(exon[1]) + 1)
+            new_annotation.append(new_exon)
+        annotation_lookup = {}
+        exon_count = len(new_annotation)
+        for exon in new_annotation:
+            for location in exon:
+                annotation_lookup[location] = exon_count
+            exon_count -= 1
+        e_list_dict = {}
+        for read in junctions_dicts:
+            od = eval(junctions_dicts[read])
+            j_list = list(od.keys())
+            e_list = []
+            for j in j_list:
+                for location in j:
+                    if location in annotation_lookup and annotation_lookup[location] not in e_list:
+                        e_list.append(annotation_lookup[location])
+            e_list.reverse()
+            if str(e_list) in e_list_dict:
+                e_list_dict[str(e_list)] += 1
+            else:
+                if 2 in e_list and 13 in e_list:
+                    e_list_dict[str(e_list)] = 1
+        import pprint
+        pprint.pprint(e_list_dict)
         exit()
