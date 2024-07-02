@@ -38,14 +38,14 @@ jobs:
       shell: Rscript {0}
     - name: Install R packages
       run: |
-        remotes::install_version("ggplot2", version="${{ matrix.config.ggplot }}")
+        remotes::install_version("ggplot2")
         remotes::install_cran(c("gridExtra", "data.table", "svglite"))
       if: steps.cache-r-packages.outputs.cache-hit != 'true'
       shell: Rscript {0}
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python_version }}
+        python-version: '3.x'
         cache: 'pip'
     - name: Install Python dependencies
       run: pip install -r requirements.txt
