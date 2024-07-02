@@ -23,8 +23,8 @@ jobs:
     - name: Get R and OS version
       id: get-version
       run: |
-        echo "os-version=$(uname -a)" >> $GITHUB_OUTPUT
-        echo "r-version=$(R --version | head -n 1)" >> $GITHUB_OUTPUT
+        echo "os-version=$(uname -a)" | tee $GITHUB_OUTPUT
+        echo "r-version=$(R --version | head -n 1)" | tee $GITHUB_OUTPUT
       shell: bash
     - name: Cache R packages
       id: cache-r-packages
