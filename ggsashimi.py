@@ -112,7 +112,7 @@ def parse_coordinates(c):
     return chr, start, end
 
 
-def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id):
+def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id, junctions_copy):
     # Match
     if CIGAR_op == "M":
         for i in range(pos, pos + CIGAR_len):
@@ -135,10 +135,11 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id):
         acc = pos + CIGAR_len
         if don > start and acc < end:
             junctions[(don, acc)] = junctions.setdefault((don, acc), 0) + 1
-    if read_id not in junctions_dicts and str(junctions) != "OrderedDict()":
-        junctions_dicts[read_id] = str(junctions)
-    elif str(junctions) != "OrderedDict()" and len(junctions_dicts[read_id]) < len(str(junctions)):
-        junctions_dicts[read_id] = str(junctions)
+            junctions_copy[(don, acc)] = junctions_copy.setdefault((don, acc), 0) + 1
+    if read_id not in junctions_dicts and str(junctions_copy) != "OrderedDict()":
+        junctions_dicts[read_id] = str(junctions_copy)
+    elif str(junctions_copy) != "OrderedDict()" and len(junctions_dicts[read_id]) < len(str(junctions_copy)):
+        junctions_dicts[read_id] = str(junctions_copy)
     pos = pos + CIGAR_len
     return pos
 
@@ -174,6 +175,7 @@ def read_bam(f, c, s):
     samfile = pysam.AlignmentFile(f)
 
     for read in samfile.fetch(chr, start, end):
+        junctions_copy = {"+": OrderedDict()}
         # Move forward if read is unmapped
         if read.is_unmapped:
             continue
@@ -198,8 +200,7 @@ def read_bam(f, c, s):
         read_id = str(read.query_name).split('|')[1]
         for n, CIGAR_op in enumerate(CIGAR_ops):
             CIGAR_len = int(CIGAR_lens[n])
-            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id)
-        junctions = {"+": OrderedDict()}
+            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id, junctions_copy)
     samfile.close()
     return a, junctions
 
@@ -1075,6 +1076,7 @@ if __name__ == "__main__":
                     if location in annotation_lookup and annotation_lookup[location] not in e_list:
                         e_list.append(annotation_lookup[location])
             e_list.reverse()
+            print(read, e_list)
             if str(e_list) in e_list_dict:
                 e_list_dict[str(e_list)] += 1
             else:
