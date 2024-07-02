@@ -1087,6 +1087,7 @@ if __name__ == "__main__":
             else:
                 if 2 in e_list and 13 in e_list:
                     e_list_dict[str(e_list)] = 1
-        import pprint
-        pprint.pprint(e_list_dict)
+        if e_list_dict != {}:
+            import pprint
+            pprint.pprint(e_list_dict)
         exit()
