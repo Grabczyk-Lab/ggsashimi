@@ -23,9 +23,9 @@ jobs:
     - name: Get R and OS version
       id: get-version
       run: |
-        cat("##[set-output name=os-version;]", sessionInfo()$running, "\n", sep = "")
-        cat("##[set-output name=r-version;]", R.Version()$version.string, sep = "")
-      shell: Rscript {0}
+        cat(sessionInfo()$running, "\n", sep = "")
+        cat(R.Version()$version.string, sep = "")
+      shell: Rscript {0} >> $GITHUB_STATE
     - name: Cache R packages
       id: cache-r-packages
       uses: actions/cache@v2
