@@ -1071,6 +1071,8 @@ if __name__ == "__main__":
                 annotation_lookup[location] = exon_count
             exon_count -= 1
         e_list_dict = {}
+        read_count = len(junctions_dicts)
+        included_count = 0
         for read in junctions_dicts:
             od = eval(junctions_dicts[read])
             j_list = list(od.keys())
@@ -1080,14 +1082,39 @@ if __name__ == "__main__":
                     if location in annotation_lookup and annotation_lookup[location] not in e_list:
                         e_list.append(annotation_lookup[location])
             e_list.reverse()
-            if e_list != []:
-                print(read, e_list)
+            if e_list != [] and 2 in e_list and 13 in e_list:
+                # print(read, e_list)
+                included_count += 1
             if str(e_list) in e_list_dict:
                 e_list_dict[str(e_list)] += 1
             else:
                 if 2 in e_list and 13 in e_list:
                     e_list_dict[str(e_list)] = 1
+        for e_list in e_list_dict:
+            e_list_dict[e_list] = (e_list_dict[e_list], e_list_dict[e_list] / read_count * 100)
         if e_list_dict != {}:
-            import pprint
-            pprint.pprint(e_list_dict)
+            # import pprint
+            # pprint.pprint(e_list_dict)
+            # print("Reads Included: ", included_count)
+            # print("Total Reads: ", read_count)
+            # print("Percentage: ", included_count/read_count * 100)
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            # plot the e_list_dict
+            temp = {}
+            for e_list in e_list_dict:
+                if e_list_dict[e_list][0] > 1:
+                    temp[e_list] = e_list_dict[e_list]
+            e_list_dict = temp
+            x = sorted(list(e_list_dict.keys()), key=lambda x: len(x))
+            y = [e_list_dict[xi][0] / read_count * 100 for xi in x]
+            ax.bar(x, y)
+            for i in range(len(x)):
+                ax.text(i, y[i], round(y[i],2))
+            ax.set_xlabel('Exon List')
+            ax.set_ylabel('Percentage of Reads')
+            ax.set_title('Reads per Exon List')
+            plt.xticks(rotation=90)
+            plt.tight_layout()
+            # plt.show()
         exit()
