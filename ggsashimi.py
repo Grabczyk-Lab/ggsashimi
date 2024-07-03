@@ -1106,6 +1106,11 @@ if __name__ == "__main__":
                 if e_list_dict[e_list][0] > 1:
                     temp[e_list] = e_list_dict[e_list]
             e_list_dict = temp
+            temp = {}
+            # e_list_dict keys are strings of lists, like "[1,2,3,5]", so we need to
+            # compress the keys to remove consecutive numbers so the resulting key
+            # is "[1-3,5]" for the example above
+            
             x = sorted(list(e_list_dict.keys()), key=lambda x: len(x))
             y = [e_list_dict[xi][0] / read_count * 100 for xi in x]
             ax.bar(x, y)
@@ -1116,5 +1121,6 @@ if __name__ == "__main__":
             ax.set_title('Reads per Exon List')
             plt.xticks(rotation=90)
             plt.tight_layout()
-            # plt.show()
+            # save the plot
+            plt.savefig("isoform_percentage_plot.png")            
         exit()
