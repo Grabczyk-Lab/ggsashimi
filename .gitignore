@@ -7,3 +7,4 @@ R_script
 *.pdf
 tmp
 .Rhistory
+*_isoform_percentage_plot.png

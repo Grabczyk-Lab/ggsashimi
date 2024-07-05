@@ -1083,7 +1083,6 @@ if __name__ == "__main__":
                         e_list.append(annotation_lookup[location])
             e_list.reverse()
             if e_list != [] and 2 in e_list and 13 in e_list:
-                # print(read, e_list)
                 included_count += 1
             if str(e_list) in e_list_dict:
                 e_list_dict[str(e_list)] += 1
@@ -1093,11 +1092,6 @@ if __name__ == "__main__":
         for e_list in e_list_dict:
             e_list_dict[e_list] = (e_list_dict[e_list], e_list_dict[e_list] / read_count * 100)
         if e_list_dict != {}:
-            # import pprint
-            # pprint.pprint(e_list_dict)
-            # print("Reads Included: ", included_count)
-            # print("Total Reads: ", read_count)
-            # print("Percentage: ", included_count/read_count * 100)
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots()
             # plot the e_list_dict
@@ -1110,17 +1104,66 @@ if __name__ == "__main__":
             # e_list_dict keys are strings of lists, like "[1,2,3,5]", so we need to
             # compress the keys to remove consecutive numbers so the resulting key
             # is "[1-3,5]" for the example above
-            
+            for key in e_list_dict:
+                seven_flag = False
+                # remove the brackets
+                key = key[1:-1]
+                # split the key into a list of integers
+                key = key.split(", ")
+                # convert the list of strings to a list of integers
+                key = [int(x) for x in key]
+                # set a starting point for the range
+                start = key[0]
+                # set a previous point for the range
+                prev = key[0]
+                # set a list to store the ranges
+                ranges = []
+                # iterate over the key
+                for i in range(1, len(key)):
+                    if key[i] == 7:
+                        seven_flag = True
+                    # if the current number is not the previous number plus one
+                    if key[i] != prev + 1:
+                        # if the start and previous are the same, append the start
+                        if start == prev:
+                            ranges.append(str(start))
+                        # if the start and previous are different, append the range
+                        else:
+                            ranges.append(str(start) + "-" + str(prev))
+                        # set the start to the current number
+                        start = key[i]
+                    # set the previous to the current number
+                    prev = key[i]
+                # if the start and previous are the same, append the start
+                if start == prev:
+                    ranges.append(str(start))
+                # if the start and previous are different, append the range
+                else:
+                    ranges.append(str(start) + "-" + str(prev))
+                # set the key to the ranges
+                temp[", ".join(ranges)] = e_list_dict[str(key)] + (seven_flag,)
+            e_list_dict = temp
             x = sorted(list(e_list_dict.keys()), key=lambda x: len(x))
             y = [e_list_dict[xi][0] / read_count * 100 for xi in x]
-            ax.bar(x, y)
+            barlist = ax.bar(x, y)
+            # if there are any seven exon reads, color them red
             for i in range(len(x)):
-                ax.text(i, y[i], round(y[i],2))
+                if e_list_dict[x[i]][2]:
+                    barlist[i].set_color('r')
+                else:
+                    barlist[i].set_color('g')
+            for i in range(len(x)):
+                # center the text above the bar
+                ax.text(i, y[i], round(y[i], 2), ha='center')
             ax.set_xlabel('Exon List')
             ax.set_ylabel('Percentage of Reads')
             ax.set_title('Reads per Exon List')
             plt.xticks(rotation=90)
             plt.tight_layout()
+            # get filename
+            filename = args.bam.split('/')[-1]
+            filename = filename.split('.')[0]
+            filename = filename + "_isoform_percentage_plot.png"
             # save the plot
-            plt.savefig("isoform_percentage_plot.png")            
+            plt.savefig(filename)            
         exit()
