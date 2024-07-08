@@ -112,8 +112,9 @@ def parse_coordinates(c):
     return chr, start, end
 
 
-def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id, junctions_copy):
+def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id, junctions_copy, f):
     # Match
+    fname = f.split("/")[-1].split("_")[0]
     if CIGAR_op == "M":
         for i in range(pos, pos + CIGAR_len):
             if i < start or i >= end:
@@ -137,9 +138,9 @@ def count_operator(CIGAR_op, CIGAR_len, pos, start, end, a, junctions, read_id, 
             junctions[(don, acc)] = junctions.setdefault((don, acc), 0) + 1
             junctions_copy[(don, acc)] = junctions_copy.setdefault((don, acc), 0) + 1
     if read_id not in junctions_dicts and str(junctions_copy) != "OrderedDict()":
-        junctions_dicts[read_id] = str(junctions_copy)
-    elif str(junctions_copy) != "OrderedDict()" and len(junctions_dicts[read_id]) < len(str(junctions_copy)):
-        junctions_dicts[read_id] = str(junctions_copy)
+        junctions_dicts[read_id] = (str(junctions_copy), fname)
+    elif str(junctions_copy) != "OrderedDict()" and len(junctions_dicts[read_id][0]) < len(str(junctions_copy)):
+        junctions_dicts[read_id] = (str(junctions_copy), fname)
     pos = pos + CIGAR_len
     return pos
 
@@ -202,7 +203,7 @@ def read_bam(f, c, s):
             read_id = str(read.query_name)
         for n, CIGAR_op in enumerate(CIGAR_ops):
             CIGAR_len = int(CIGAR_lens[n])
-            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id, junctions_copy)
+            pos = count_operator(CIGAR_op, CIGAR_len, pos, start, end, a[read_strand], junctions[read_strand], read_id, junctions_copy, f)
     samfile.close()
     return a, junctions
 
@@ -1074,23 +1075,24 @@ if __name__ == "__main__":
         read_count = len(junctions_dicts)
         included_count = 0
         for read in junctions_dicts:
-            od = eval(junctions_dicts[read])
-            j_list = list(od.keys())
-            e_list = []
-            for j in j_list:
-                for location in j:
-                    if location in annotation_lookup and annotation_lookup[location] not in e_list:
+            od = eval(junctions_dicts[read][0]) # od is the ordered dictionary of junctions for a read
+            fname = junctions_dicts[read][1] # fname is the filename of the bam file the read came from
+            j_list = list(od.keys()) # j_list is a list of junctions for a read
+            e_list = [] # e_list is a list of exons for a read
+            for j in j_list: # iterate over the junctions in the read
+                for location in j: # iterate over the locations in the junction
+                    if location in annotation_lookup and annotation_lookup[location] not in e_list: # if the location is in the annotation and not already in the e_list
                         e_list.append(annotation_lookup[location])
-            e_list.reverse()
-            if e_list != [] and 2 in e_list and 13 in e_list:
-                included_count += 1
-            if str(e_list) in e_list_dict:
-                e_list_dict[str(e_list)] += 1
-            else:
-                if 2 in e_list and 13 in e_list:
-                    e_list_dict[str(e_list)] = 1
-        for e_list in e_list_dict:
-            e_list_dict[e_list] = (e_list_dict[e_list], e_list_dict[e_list] / read_count * 100)
+            e_list.reverse() # reverse the list so the exons are in order
+            if e_list != [] and 2 in e_list and 13 in e_list: # if the read has exons and exons 2 and 13 are in the list
+                included_count += 1 # increment the included count
+            if (str(e_list), fname) in e_list_dict: # if the e_list is already in the dictionary, increment the count
+                e_list_dict[(str(e_list),fname)] += 1 
+            else: # if the e_list is not in the dictionary, add it to the dictionary
+                if 2 in e_list and 13 in e_list: # if the read has exons 2 and 13
+                    e_list_dict[(str(e_list),fname)] = 1
+        for e_list in e_list_dict: # iterate over the e_list_dict
+            e_list_dict[e_list] = (e_list_dict[e_list], e_list_dict[e_list] / read_count * 100) # set the value to a tuple of the count and the percentage of reads
         if e_list_dict != {}:
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots()
@@ -1101,12 +1103,10 @@ if __name__ == "__main__":
                     temp[e_list] = e_list_dict[e_list]
             e_list_dict = temp
             temp = {}
-            # e_list_dict keys are strings of lists, like "[1,2,3,5]", so we need to
-            # compress the keys to remove consecutive numbers so the resulting key
-            # is "[1-3,5]" for the example above
             for key in e_list_dict:
                 seven_flag = False
-                # remove the brackets
+                fname = key[1] # get the filename
+                key = key[0] # get the key, the filename is not needed 
                 key = key[1:-1]
                 # split the key into a list of integers
                 key = key.split(", ")
@@ -1141,25 +1141,28 @@ if __name__ == "__main__":
                 else:
                     ranges.append(str(start) + "-" + str(prev))
                 # set the key to the ranges
-                temp[", ".join(ranges)] = e_list_dict[str(key)] + (seven_flag,)
+                temp[", ".join(ranges), fname] = e_list_dict[str(key),fname] + (seven_flag,)
             e_list_dict = temp
-            x = sorted(list(e_list_dict.keys()), key=lambda x: len(x))
-            y = [e_list_dict[xi][0] / read_count * 100 for xi in x]
+            e_list_keys_str = []
+            for e_list in e_list_dict:
+                e_list_keys_str.append(str(e_list[0]))
+            x = e_list_keys_str
+            y = [e_list_dict[xi][0] / read_count * 100 for xi in e_list_dict]
             barlist = ax.bar(x, y)
             # if there are any seven exon reads, color them red
-            for i in range(len(x)):
-                if e_list_dict[x[i]][2]:
-                    barlist[i].set_color('r')
-                else:
-                    barlist[i].set_color('g')
-            for i in range(len(x)):
+            #for i in e_list_dict:
+            #    if e_list_dict[i][2]:
+            #        
+            #        barlist[i].set_color('r')
+            #    else:
+            #        barlist[i].set_color('g')
+            # for i in range(len(x)):
                 # center the text above the bar
-                ax.text(i, y[i], round(y[i], 2), ha='center')
+            #    ax.text(i, y[i], round(y[i], 2), ha='center')
             ax.set_xlabel('Exon List')
             ax.set_ylabel('Percentage of Reads')
             ax.set_title('Reads per Exon List')
             plt.xticks(rotation=90)
-            plt.tight_layout()
             # get filename
             filename = args.bam.split('/')[-1]
             filename = filename.split('.')[0]
