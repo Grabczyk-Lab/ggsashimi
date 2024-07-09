@@ -1144,11 +1144,34 @@ if __name__ == "__main__":
                 temp[", ".join(ranges), fname] = e_list_dict[str(key),fname] + (seven_flag,)
             e_list_dict = temp
             e_list_keys_str = []
+            e_list_barcode_str = []
+            #print(e_list_dict)
             for e_list in e_list_dict:
                 e_list_keys_str.append(str(e_list[0]))
-            x = e_list_keys_str
-            y = [e_list_dict[xi][0] / read_count * 100 for xi in e_list_dict]
-            barlist = ax.bar(x, y)
+                e_list_barcode_str.append(e_list[1][7:])
+            import numpy as np
+            x = np.arange(len(e_list_keys_str))
+            width = 0.25
+            multiplier = 0
+            barcode_dict = {}
+            counter = 0
+            for barcode in e_list_barcode_str:
+                barcode_dict[barcode] = []
+            for barcode in e_list_barcode_str:
+                if barcode not in barcode_dict.keys():
+                    barcode_dict[barcode] = [e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][1]]
+                else:
+                    barcode_dict[barcode].append(e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][1])
+                counter += 1
+                for barcode2 in barcode_dict:
+                    if barcode2 != barcode:
+                        barcode_dict[barcode2].append(0)
+            fig, ax = plt.subplots(layout='constrained')
+            for barcode, values in barcode_dict.items():
+                offset = width * multiplier
+                rects = ax.bar(x + offset, values, width, label = barcode)
+                ax.bar_label(rects, padding=3)
+                multiplier += 1 
             # if there are any seven exon reads, color them red
             #for i in e_list_dict:
             #    if e_list_dict[i][2]:
@@ -1162,7 +1185,8 @@ if __name__ == "__main__":
             ax.set_xlabel('Exon List')
             ax.set_ylabel('Percentage of Reads')
             ax.set_title('Reads per Exon List')
-            plt.xticks(rotation=90)
+            ax.legend()
+            ax.set_xticks(x + width, e_list_keys_str, rotation=90)
             # get filename
             filename = args.bam.split('/')[-1]
             filename = filename.split('.')[0]
