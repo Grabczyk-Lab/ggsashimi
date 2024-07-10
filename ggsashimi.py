@@ -1159,38 +1159,33 @@ if __name__ == "__main__":
                 barcode_dict[barcode] = []
             for barcode in e_list_barcode_str:
                 if barcode not in barcode_dict.keys():
-                    barcode_dict[barcode] = [e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][1]]
+                    barcode_dict[barcode] = [e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][0]]
                 else:
-                    barcode_dict[barcode].append(e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][1])
+                    barcode_dict[barcode].append(e_list_dict[(e_list_keys_str[counter], "barcode" + barcode)][0])
                 counter += 1
                 for barcode2 in barcode_dict:
                     if barcode2 != barcode:
                         barcode_dict[barcode2].append(0)
-            fig, ax = plt.subplots(layout='constrained')
-            for barcode, values in barcode_dict.items():
-                offset = width * multiplier
-                rects = ax.bar(x + offset, values, width, label = barcode)
-                ax.bar_label(rects, padding=3)
-                multiplier += 1 
-            # if there are any seven exon reads, color them red
-            #for i in e_list_dict:
-            #    if e_list_dict[i][2]:
-            #        
-            #        barlist[i].set_color('r')
-            #    else:
-            #        barlist[i].set_color('g')
-            # for i in range(len(x)):
-                # center the text above the bar
-            #    ax.text(i, y[i], round(y[i], 2), ha='center')
-            ax.set_xlabel('Exon List')
-            ax.set_ylabel('Percentage of Reads')
-            ax.set_title('Reads per Exon List')
-            ax.legend()
-            ax.set_xticks(x + width, e_list_keys_str, rotation=90)
-            # get filename
-            filename = args.bam.split('/')[-1]
-            filename = filename.split('.')[0]
-            filename = filename + "_isoform_percentage_plot.png"
-            # save the plot
-            plt.savefig(filename)            
-        exit()
+            import pandas as pd
+            dfdict = {"exon": [],
+                      "barcode": [],
+                      "reads": []}
+            counter = 0
+            for key in e_list_keys_str:
+                dfdict["exon"].append(key)
+                for barcode in barcode_dict.keys():
+                    if barcode_dict[barcode][counter] != 0:
+                        dfdict["reads"].append(barcode_dict[barcode][counter])
+                        dfdict["barcode"].append(barcode)
+                counter += 1
+            df = pd.DataFrame(dfdict)
+            import seaborn as sns
+            g = sns.catplot(data=df, kind="bar", x="exon", y="reads", hue="barcode", palette="viridis", height=10, aspect=2)
+            g.despine(left=True)
+            g.set_axis_labels("Exon List", "Number of Reads")
+            # create seperator lines between the exons using seaborn
+            for i in range(1, df["exon"].nunique()):
+                plt.axvline(x=i-0.5, color='black', linewidth=0.5)
+            # save the plot in a large size
+            plt.savefig("isoform_percentage_plot.png", dpi=600)
+            exit()
